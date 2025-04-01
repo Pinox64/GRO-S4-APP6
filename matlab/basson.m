@@ -5,9 +5,83 @@ clear all
 %Pour filtrer le bruit on veut faire un RII un passe bas pour eliminer +15khz
 %Pour filtrer la sinus, on veut faire un Coupe bande butterworth pour
 %eliminer tout ce qui est entre 980hz à 1020hz
+[x,fe] = audioread("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs.wav");
+ %% Filtre coupe bande
+
+fc_lp = 40;  % Fréquence de coupure du filtre
+N = 1024;   %Ordre du filtre (Donné dans l'énoncé)
+m = N*fc_lp/fe
+K = m*2+1;
+fc_nf = 1000;
+w0 = 2*pi*fc_nf/fe; %Fréqence centrale (en Hz) de la bande à élminier (
+% A small local function that never computes 0/0 for x=0
+function val = h_bas(x, K, N)
+    if x == 0
+        val = K/N;
+    else
+        val = (1/N) * sin(pi*K*x/N) / sin(pi*x/N);
+    end
+end
+h_bas2 = @(n) arrayfun(@(x) h_bas(x, K, N), n);
+function val = h_bande(x, K, N,w0)
+    delta = double(x==0); %Dirac discret
+    val = delta - 2*h_bas(x,K,N)*cos(w0*x);
+end
+% Then define an anonymous "vectorized" function using arrayfun:
+h = @(n) arrayfun(@(x) h_bande(x, K, N,w0), n);
+
+Nfft = N;
+n_ = -N/2 : N/2-1; 
+h_ = h(n_);   % No NaNs, h_ is a vector
+hb_ = h_bas2(n_); 
+h_fft = fftshift(fft(h_,Nfft));
+h_mag = 20*log(abs(h_fft));
+h_phase = angle(h_fft);
+
+hb_fft = fftshift(fft(hb_,Nfft));
+hb_mag = 20*log(abs(hb_fft));
+hb_phase = angle(hb_fft);
+
+f_ = linspace(-fe/2, fe/2, Nfft);   % axe des fréquences en Hz
+
+figure("Name","reponse freq du passe bas")
+%freqz(h_,1024);
+%hold on;
+%freqz(h_b,1024);
+subplot(2,1,1);
+plot(f_,hb_mag);
+title("mag");
+subplot(2,1,2);
+plot(f_,hb_phase);
+title("phase");
+xlabel("Frequence");
+ylabel("Amplitude (db)");
+%legend("Coupe bande", "Passe bas");
+
+figure("Name","reponse freq du coupe bande")
+%freqz(h_,1024);
+%hold on;
+%freqz(h_b,1024);
+subplot(2,1,1);
+plot(f_,h_mag);
+title("mag");
+subplot(2,1,2);
+plot(f_,h_phase);
+title("phase");
+legend("Coupe bande", "Passe bas");
+
+figure ("Name","Coupe bande");
+plot(n_,h_);
+title("Réponse a une impulsion du coupe bande")
+%h_trunc = h_(end/2, end)
+h_mogus = hamming(Nfft)'.*h_;
+h_reconstructed = real(ifft(ifftshift(h_)));
+filteredsinSound = conv(x,h_mogus);
+
+audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_NoSin.wav",filteredsinSound,fe)
 
 %% Filtre RII (butterworth) pour filtrer ce qui est plus haut que 15KHz
-[x,fe] = audioread("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs.wav");
+
 %fc = 12000;
 fp = 8000; % Fréquence de passage (on coupe moins de 1db)
 fs = 15000; % Fréquence qu'on veut complètement couper
@@ -20,48 +94,14 @@ Rs = 40; % Atténuation minimale à la fréquence de stop (en db)
 
 [N, Wn] = buttord(Wp,Ws,Rp,Rs)
 [b,a] = butter(N,Wn,"low");
- y = filter(b,a,x);
+ fullyFiltered = filter(b,a,filteredsinSound);
  
- audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_hf_couper.wav",y,fe);
+ audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_hf_couper.wav",fullyFiltered,fe);
  figure (1);
  t = 1:length(x);
  plot(t,x);
  hold on;
- plot(t,y);
+ plot(t,fullyFiltered);
  legend("in","out");
 
- %% Filtre coupe bande
 
-fc = 1000;  % Fréquence de coupure du filtre
-N = 1024; %Ordre du filtre (Donné dans l'énoncé)
-m = N*fc/fe;
-K = m*2+1
-w0 = 2*pi*fc/fe; %Fréqence centrale (en Hz) de la bande à élminier (
-% A small local function that never computes 0/0 for x=0
-function val = h_bas(x, K, N)
-    if x == 0
-        val = K/N;
-    else
-        val = (1/N) * sin(pi*K*x/N) / sin(pi*x/N);
-    end
-end
-h_bas2 = @(n) arrayfun(@(x) h_bas(x, K, N), n);
-function val = h_bande(x, K, N,w0)
-    delta = double(x==0) %Dirac discret
-    val = delta - 2*h_bas(x,K,N)*cos(w0*x);
-end
-% Then define an anonymous "vectorized" function using arrayfun:
-h = @(n) arrayfun(@(x) h_bande(x, K, N,w0), n);
-
-n_ = -N/2 : N/2-1; 
-h_ = h(n_);   % No NaNs, h_ is a vector
-h_fft = fftshift(fft(h_,1024));
-h_mag = 20*log(abs(h_fft));
-h_phase = angle(h_fft);
-freqz(h_);
-figure ("Name","Coupe bande");
-plot(n_,h_);
-title("Réponse fréquentielle du coupe bande")
-
-filteredsinSound = conv(y,h_);
-audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_fully_filtered.wav",filteredsinSound,fe)
