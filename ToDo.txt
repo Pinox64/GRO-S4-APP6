@@ -1,0 +1,2 @@
+Get harmoniques et enveloppe temporelle du la # puis transposer pour avoir les autres notes
+Basson restorer avec un passe bas pour eliminer +15khz et coupe bande pour 980 à 1020 pour eliminer 1000 hz, puis rééchantillonner a la moitié. 

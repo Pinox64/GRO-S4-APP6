@@ -77,7 +77,7 @@ title("Réponse a une impulsion du coupe bande")
 h_mogus = hamming(Nfft)'.*h_;
 h_reconstructed = real(ifft(ifftshift(h_)));
 filteredsinSound = conv(x,h_mogus);
-
+filteredsinSound = filteredsinSound(length(h_mogus):length(filteredsinSound)-length(h_mogus));
 audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_NoSin.wav",filteredsinSound,fe)
 
 %% Filtre RII (butterworth) pour filtrer ce qui est plus haut que 15KHz
@@ -95,13 +95,87 @@ Rs = 40; % Atténuation minimale à la fréquence de stop (en db)
 [N, Wn] = buttord(Wp,Ws,Rp,Rs)
 [b,a] = butter(N,Wn,"low");
  fullyFiltered = filter(b,a,filteredsinSound);
- 
  audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_hf_couper.wav",fullyFiltered,fe);
- figure (1);
- t = 1:length(x);
- plot(t,x);
- hold on;
- plot(t,fullyFiltered);
- legend("in","out");
+ %figure (1);
+ %t = 1:length(x);
+ %plot(t,x);
+ %hold on;
+ %plot(t,fullyFiltered);
+ %legend("in","out");
+y = fullyFiltered;
+w_hamm = hamming(length(y));
+y_f = y .* w_hamm;      %Appliquer un fenétrage hamming sur le signal d'entrée
+Y = fftshift(fft(y_f));
 
 
+Fmag = abs(Y);
+Fphase = angle(Y);
+%% Trouver harmoniques du son filtré
+f0 = 466;
+harmoniques = f0*(1:32);
+
+index_harmo = zeros(1, length(harmoniques));
+for k = 1:length(harmoniques)
+    % Chercher l'index le plus proche
+    [~, idx] = min(abs(f_ - harmoniques(k)));
+    
+    % Chercher localement le maximum dans une petite fenêtre
+    range = max(1, idx-1000):min(N, idx+1000); % Éviter les dépassements
+    [~, local_max] = max(Fmag(range));
+    
+    % Mettre à jour l'index avec la position du vrai pic
+    index_harmo(k) = range(local_max);
+end
+
+%% Passe-bas RIF pour l'enveloppe temporelle
+
+%Ordre du filtre
+Fc = pi/1000;
+N = 1000;
+m = N*Fc/fe;
+K = 2*m+1;
+
+% Génération de la réponse impulsionnelle
+k = -N/2:N/2-1; % Indices centrés autour de 0
+h = zeros(size(k)); % Initialisation du filtre
+
+% Calcul des coefficients
+for i = 1:length(k)
+    if k(i) == 0
+        h(i) = K / N;
+    else
+        h(i) = (1/N) * (sin(pi * k(i) * K / N) / sin(pi * k(i) / N));
+    end
+end
+
+h = hamming(N)'.*h;
+y_abs = abs(fullyFiltered);
+
+y_filtered = conv(y_abs, h, 'same');
+
+figure(3);
+plot(y_abs, 'b'); hold on;
+plot(y_filtered, 'r'); hold off;
+xlabel('Échantillon');
+ylabel('Magnitude');
+legend('Avant filtrage', 'Après filtrage');
+title('Signal et enveloppe temporelle');
+grid on;
+
+%% Recréer LA#
+n = f_
+t = 1:length(y_filtered);
+sum_sinuses = zeros(1, length(t));
+for i = 1:length(index_harmo)
+    sum_sinuses = sum_sinuses + real(Y(index_harmo(i)))*sin(2*pi*n(index_harmo(i))*t-Fphase(index_harmo(i)));
+end
+
+synth = sum_sinuses' .* y_filtered;
+
+figure(4);
+plot(synth);
+hold on;
+plot(y);
+hold off;
+
+sound(y, fe);

@@ -7,7 +7,7 @@ duree_son = info.Duration;
 N = 160000;
 
 w_hamm = hamming(N);
-y_f = y .* w_hamm;      %Appliquer un fenétrage hamming sur le signal d'entrée
+y_f = y .* w_hamm;
 Y = fftshift(fft(y_f));
 
 
@@ -48,7 +48,7 @@ plot(n ,Fphase);
 xlabel('Fréquence Hz');
 ylabel('Phase');
 
-%% Passe-bas RIF pour l'enveloppe temporelle
+%% Passe-bas RIF
 
 %Ordre du filtre
 Fc = pi/1000;
@@ -83,7 +83,7 @@ legend('Avant filtrage', 'Après filtrage');
 title('Signal et enveloppe temporelle');
 grid on;
 
-%% Recréer LA#
+%%Recréer LA#
 
 t = 1:160000;
 sum_sinuses = zeros(1, length(t));
