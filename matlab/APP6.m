@@ -83,13 +83,13 @@ grid on;
 
 %%Recréer LA#
 
-t = 0:N;
+t = 1:160000;
 sum_sinuses = zeros(1, length(t));
 for i = 1:length(index_harmo)
     sum_sinuses = sum_sinuses + real(Y(index_harmo(i)))*sin(2*pi*n(index_harmo(i))*t-Fphase(index_harmo(i)));
 end
 
-synth = sum_sinuses .* y_filtered;
+synth = sum_sinuses' .* y_filtered;
 
 figure(4);
 plot(synth);
@@ -97,4 +97,5 @@ hold on;
 plot(y);
 hold off;
 
+sound(y, Fs);
 %audiowrite('note_guitar_LAd_synthetise.wav', synth, Fs);
