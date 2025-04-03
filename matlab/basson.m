@@ -78,7 +78,7 @@ title("Réponse a une impulsion du coupe bande")
 %h_trunc = h_(end/2, end)
 h_mogus = hamming(Nfft)'.*h_;
 h_reconstructed = real(ifft(ifftshift(h_)));
-filteredsinSound = conv(x,h_mogus);
+filteredsinSound = conv(x,h_mogus, "same");
 filteredsinSound = filteredsinSound(length(h_mogus):length(filteredsinSound)-length(h_mogus));
 audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_NoSin.wav",filteredsinSound,fe)
 
@@ -113,7 +113,7 @@ Y = fftshift(fft(y_f));
 %% Rééchantillonnement du signal Basson
 y_downsampled = downsample(fullyFiltered,2);
 fe2 = fe/2
-N = 160000;
+N = length(y_downsampled);
 n = linspace(-fe2/2, fe2/2, N);
 
 sound(y_downsampled, fe2)
@@ -159,24 +159,24 @@ ylabel('Phase');
 
 %Ordre du filtre
 Fc = pi/1000;           % Fréquence de coupure
-N = 1000;               % Ordre du filtre
-m = N*Fc/fe2;
+N_lp = 1000;               % Ordre du filtre
+m = N_lp*Fc/fe2;
 K = 2*m+1;
 
 % Génération de la réponse impulsionnelle
-k = -N/2:N/2-1; % Indices centrés autour de 0
+k = -N_lp/2:N_lp/2-1; % Indices centrés autour de 0
 h = zeros(size(k)); % Initialisation du filtre
 
 % Calcul des coefficients de la réponse impulsionnelle
 for i = 1:length(k)
     if k(i) == 0
-        h(i) = K / N;
+        h(i) = K / N_lp;
     else
-        h(i) = (1/N) * (sin(pi * k(i) * K / N) / sin(pi * k(i) / N));
+        h(i) = (1/N_lp) * (sin(pi * k(i) * K / N_lp) / sin(pi * k(i) / N_lp));
     end
 end
 
-h = hamming(N)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
+h = hamming(N_lp)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
 y_abs = abs(y);         % On met le signal d'entrée en valeur absolue car l'envloppe temporelle est tjrs au dessus de zéro
 
 y_filtered = conv(y_abs, h, 'same');    % On applique le filtre passe bas au signal d'entrée
@@ -193,7 +193,6 @@ title('Signal et enveloppe temporelle');
 grid on;
 
 %%Recréer un LA#
-freqLad = 466.2;
 t = (0:length(y_filtered)-1) / fe2;
 
 sum_sinuses = zeros(1, length(t));
@@ -205,3 +204,16 @@ synthLA = sum_sinuses' .* y_filtered;
 synthLA = synthLA / max(abs(synthLA));
 
 sound(synthLA, fe2);
+audiowrite("basson_generated.wav",synthLA, fe2);
+
+% Affichage de la comparaison des deux signaux (original vs généré)
+figure(29);
+clf
+fftSynth = abs(fftshift(fft(synthLA,N)));
+subplot(2,1,1);
+plot(n,20*log(fftSynth))
+title("Généré");
+subplot(2,1,2);
+fftOriginal = abs(fftshift(fft(y_downsampled)));
+plot(n,20*log(fftOriginal));
+title("original");
