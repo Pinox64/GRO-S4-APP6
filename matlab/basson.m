@@ -1,4 +1,3 @@
-close all
 clear all
 
 %But: filtrer le bruit et la sinus.
@@ -45,6 +44,7 @@ hb_phase = angle(hb_fft);
 f_ = linspace(-fe/2, fe/2, Nfft);   % axe des fréquences en Hz
 
 figure("Name","reponse freq du passe bas")
+clf
 %freqz(h_,1024);
 %hold on;
 %freqz(h_b,1024);
@@ -59,6 +59,7 @@ ylabel("Amplitude (db)");
 %legend("Coupe bande", "Passe bas");
 
 figure("Name","reponse freq du coupe bande")
+clf
 %freqz(h_,1024);
 %hold on;
 %freqz(h_b,1024);
@@ -71,6 +72,7 @@ title("phase");
 legend("Coupe bande", "Passe bas");
 
 figure ("Name","Coupe bande");
+clf
 plot(n_,h_);
 title("Réponse a une impulsion du coupe bande")
 %h_trunc = h_(end/2, end)
@@ -108,38 +110,64 @@ y_f = y .* w_hamm;      %Appliquer un fenétrage hamming sur le signal d'entrée
 Y = fftshift(fft(y_f));
 
 
-Fmag = abs(Y);
-Fphase = angle(Y);
-%% Trouver harmoniques du son filtré
-f0 = 466;
-harmoniques = f0*(1:32);
+%% Rééchantillonnement du signal Basson
+y_downsampled = downsample(fullyFiltered,2);
+fe2 = fe/2
+N = 160000;
+n = linspace(-fe2/2, fe2/2, N);
 
-index_harmo = zeros(1, length(harmoniques));
+sound(y_downsampled, fe2)
+
+%% Trouver les harmoniques du signal Basson et leur magnitude
+F = fftshift(fft(y_downsampled,N));
+Fmag = abs(F);
+Fphase = angle(F);
+
+f0 = 466/2;                                               % Fréquence fondamentale du son d'origine (La#)
+harmoniques = f0*(1:32);                                % Fréquence de chaque harmonique théorique de la fondamentale
+
+index_harmo = zeros(1, length(harmoniques));            %Index des maximums de la fft qui correspondent aux harmoniques théoriques
 for k = 1:length(harmoniques)
-    % Chercher l'index le plus proche
-    [~, idx] = min(abs(f_ - harmoniques(k)));
+    % Chercher l'index fréquentiel le plus proche de l'harmonique théorique
+    [~, idx] = min(abs(n - harmoniques(k)));
     
     % Chercher localement le maximum dans une petite fenêtre
-    range = max(1, idx-1000):min(N, idx+1000); % Éviter les dépassements
-    [~, local_max] = max(Fmag(range));
+    range = max(1, idx-1000):min(N, idx+1000);          % Fenétrage pour Éviter les dépassements
+    [~, local_max] = max(Fmag(range));                  % Trouver l'index fréquentiel dont la magnitude est la plus haute
     
     % Mettre à jour l'index avec la position du vrai pic
     index_harmo(k) = range(local_max);
 end
 
-%% Passe-bas RIF pour l'enveloppe temporelle
+figure(21);
+clf
+plot(n, 20*log(Fmag));
+hold on;
+scatter(n(index_harmo), 20*log(Fmag(index_harmo)), 'ro', 'filled'); 
+xlabel('Fréquence Hz');
+ylabel('Magnitude (dB)');
+title('Détection des harmoniques');
+grid on;
+legend('FFT', 'Harmoniques détectées');
+hold off;
+figure(2);
+plot(n ,Fphase);
+xlabel('Fréquence Hz');
+ylabel('Phase');
+
+%% Passe-bas RIF (génération de l'enveloppe)
 
 %Ordre du filtre
-Fc = pi/1000;
-N = 1000;
-m = N*Fc/fe;
+Fc = pi/1000;           % Fréquence de coupure
+N = 1000;               % Ordre du filtre
+m = N*Fc/fe2;
 K = 2*m+1;
 
 % Génération de la réponse impulsionnelle
 k = -N/2:N/2-1; % Indices centrés autour de 0
 h = zeros(size(k)); % Initialisation du filtre
 
-% Calcul des coefficients
+% Calcul des coefficients de la réponse impulsionnelle
 for i = 1:length(k)
     if k(i) == 0
         h(i) = K / N;
@@ -148,12 +176,14 @@ for i = 1:length(k)
     end
 end
 
-h = hamming(N)'.*h;
-y_abs = abs(fullyFiltered);
+h = hamming(N)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
+y_abs = abs(y);         % On met le signal d'entrée en valeur absolue car l'envloppe temporelle est tjrs au dessus de zéro
 
-y_filtered = conv(y_abs, h, 'same');
+y_filtered = conv(y_abs, h, 'same');    % On applique le filtre passe bas au signal d'entrée
 
-figure(3);
+% Affichage du résultat de l'enveloppe temp
+figure(23);
+clf
 plot(y_abs, 'b'); hold on;
 plot(y_filtered, 'r'); hold off;
 xlabel('Échantillon');
@@ -162,20 +192,16 @@ legend('Avant filtrage', 'Après filtrage');
 title('Signal et enveloppe temporelle');
 grid on;
 
-%% Recréer LA#
-n = f_
-t = 1:length(y_filtered);
+%%Recréer un LA#
+freqLad = 466.2;
+t = (0:length(y_filtered)-1) / fe2;
+
 sum_sinuses = zeros(1, length(t));
 for i = 1:length(index_harmo)
-    sum_sinuses = sum_sinuses + real(Y(index_harmo(i)))*sin(2*pi*n(index_harmo(i))*t-Fphase(index_harmo(i)));
+    sum_sinuses = sum_sinuses + Fmag(index_harmo(i)) * cos(2*pi*harmoniques(i)*t+Fphase(index_harmo(i)));
 end
 
-synth = sum_sinuses' .* y_filtered;
+synthLA = sum_sinuses' .* y_filtered;
+synthLA = synthLA / max(abs(synthLA));
 
-figure(4);
-plot(synth);
-hold on;
-plot(y);
-hold off;
-
-sound(y, fe);
+sound(synthLA, fe2);
