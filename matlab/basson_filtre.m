@@ -31,7 +31,7 @@ h = @(n) arrayfun(@(x) h_bande(x, K, N,w0), n);
 
 Nfft = N;
 n_ = -N/2 : N/2-1; 
-h_ = h(n_);   % No NaNs, h_ is a vector
+h_ = hamming(N)'.*h(n_);   % Reponse impulsionnelle du filtre coupe bande avec effet de gibs supprimé (fenétrage)
 hb_ = h_bas2(n_); 
 h_fft = fftshift(fft(h_,Nfft));
 h_mag = 20*log(abs(h_fft));

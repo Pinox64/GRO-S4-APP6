@@ -9,7 +9,7 @@ F = fftshift(fft(y,N));
 Fmag = abs(F);
 Fphase = angle(F);
 
-f0 = 466/2;                                               % Fréquence fondamentale du son d'origine (La#)
+f0 = 240.5;               % Fréquence de la première harmonique trouvée sur le graphique
 harmoniques = f0*(1:32);                                % Fréquence de chaque harmonique théorique de la fondamentale
 
 index_harmo = zeros(1, length(harmoniques));            %Index des maximums de la fft qui correspondent aux harmoniques théoriques
@@ -18,7 +18,7 @@ for k = 1:length(harmoniques)
     [~, idx] = min(abs(n - harmoniques(k)));
     
     % Chercher localement le maximum dans une petite fenêtre
-    range = max(1, idx-1000):min(N, idx+1000);          % Fenétrage pour Éviter les dépassements
+    range = max(1, idx-100):min(N, idx+100);          % Fenétrage pour Éviter les dépassements
     [~, local_max] = max(Fmag(range));                  % Trouver l'index fréquentiel dont la magnitude est la plus haute
     
     % Mettre à jour l'index avec la position du vrai pic
