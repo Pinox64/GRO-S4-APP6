@@ -1,0 +1,3 @@
+faire un filtre a coefficients égaux
+Fenétrage sur effet de gibs pour coupe bande
+Diviser freq fond par 2 pour get la 1re 
