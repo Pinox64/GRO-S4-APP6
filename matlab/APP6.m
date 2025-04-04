@@ -51,18 +51,17 @@ title('Détection des harmoniques');
 grid on;
 legend('FFT', 'Harmoniques détectées');
 hold off;
-figure(2);
-plot(n ,Fphase);
-xlabel('Fréquence Hz');
-ylabel('Phase');
+
 
 %% Passe-bas RIF (génération de l'enveloppe)
 
 %Ordre du filtre
-Fc = pi/1000;           % Fréquence de coupure
-N = 1000;               % Ordre du filtre
+Fc = (pi/1000)/(2*pi);           % Fréquence de coupure
+N = 600;               % Ordre du filtre
 m = N*Fc/Fs;
 K = 2*m+1;
+
+
 
 % Génération de la réponse impulsionnelle
 k = -N/2:N/2-1; % Indices centrés autour de 0
@@ -83,7 +82,7 @@ y_abs = abs(y);         % On met le signal d'entrée en valeur absolue car l'env
 y_filtered = conv(y_abs, h, 'same');    % On applique le filtre passe bas au signal d'entrée
 
 % Affichage du résultat de l'enveloppe temp
-figure(3);
+figure(2);
 plot(y_abs, 'b'); hold on;
 plot(y_filtered, 'r'); hold off;
 xlabel('Échantillon');
@@ -132,8 +131,26 @@ end
 
 synthLA = sum_sinuses' .* y_filtered;
 synthLA = synthLA / max(abs(synthLA));
+audiowrite("note_guitar_generated.wav", synthLA, Fs);
 
-%sound(synthLA, Fs);
+figure(3);
+subplot(2, 1, 1);
+plot(y);
+title('Original');
+subplot(2, 1, 2);
+plot(synthLA);
+title('Synthétisé');
+
+sound(y, Fs);
+T = timer('TimerFcn',@(~,~)disp(''),'StartDelay',duree_son*1.5);
+start(T);
+wait(T);
+stop(T);
+sound(synthLA, Fs);
+T = timer('TimerFcn',@(~,~)disp(''),'StartDelay',duree_son*1.5);
+start(T);
+wait(T);
+stop(T);
 
 %%Recréer un SOL
 t = (0:length(y_filtered)-1) / Fs;
