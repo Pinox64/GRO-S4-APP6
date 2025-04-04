@@ -114,7 +114,8 @@ Rs = 40; % Atténuation minimale à la fréquence de stop (en db)
  figure ("Name", "Pôles et zéros du filtre RII (butterworth)");
  zplane(b,a);
  title("Pôles et zéros du filtre RII (butterworth)");
-
+ figure("Name","Filtre butter")
+ freqz(b,a)
 y = fullyFiltered;
 w_hamm = hamming(length(y));
 y_f = y .* w_hamm;      %Appliquer un fenétrage hamming sur le signal d'entrée
