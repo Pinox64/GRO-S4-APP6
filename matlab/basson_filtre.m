@@ -83,7 +83,7 @@ title("Réponse a une impulsion du coupe bande")
 %h_trunc = h_(end/2, end)
 h_mogus = hamming(Nfft)'.*h_;
 h_reconstructed = real(ifft(ifftshift(h_)));
-filteredsinSound = conv(x,h_mogus, "same");
+filteredsinSound = conv(conv(x,h_mogus, "same"),h_mogus,"same");
 filteredsinSound = filteredsinSound(length(h_mogus):length(filteredsinSound)-length(h_mogus));
 audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_NoSin.wav",filteredsinSound,fe)
 
@@ -127,5 +127,5 @@ fe2 = fe/2
 N = length(y_downsampled);
 n = linspace(-fe2/2, fe2/2, N);
 
-%sound(y_downsampled, fe2)
+sound(y_downsampled, fe2)
 audiowrite("note_basson_filtered_and_downsampled.wav", y_downsampled, fe2)
