@@ -1,0 +1,5 @@
+1- 
+	Dans:
+	% Mettre à jour l'index avec la position du vrai pic
+	index_harmo(k) = range(local_max);
+	Pk on fais range()?
