@@ -57,24 +57,10 @@ hold off;
 
 %Ordre du filtre
 Fc = (pi/1000)/(2*pi);           % Fréquence de coupure
-N = 600;               % Ordre du filtre
-m = N*Fc/Fs;
-K = 2*m+1;
-
-
+N = 610;               % Ordre du filtre
 
 % Génération de la réponse impulsionnelle
-k = -N/2:N/2-1; % Indices centrés autour de 0
-h = zeros(size(k)); % Initialisation du filtre
-
-% Calcul des coefficients de la réponse impulsionnelle
-for i = 1:length(k)
-    if k(i) == 0
-        h(i) = K / N;
-    else
-        h(i) = (1/N) * (sin(pi * k(i) * K / N) / sin(pi * k(i) / N));
-    end
-end
+h = ones(1, N) / N; % Coefficients égaux
 
 h = hamming(N)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
 y_abs = abs(y);         % On met le signal d'entrée en valeur absolue car l'envloppe temporelle est tjrs au dessus de zéro
@@ -235,4 +221,6 @@ start(T);
 wait(T);
 stop(T);
 sound(synthRE, Fs);
+
+
 
