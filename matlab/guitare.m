@@ -15,6 +15,7 @@ info = audioinfo("note_guitare_LAd.wav");
 duree_son = info.Duration;
 N = 160000;
 
+%Fenetrage et FFT
 w_hamm = hamming(N);
 y_f = y .* w_hamm;
 Y = fftshift(fft(y_f));
@@ -77,14 +78,6 @@ legend('Avant filtrage', 'Après filtrage');
 title('Signal et enveloppe temporelle de la guitare');
 grid on;
 
-figure("Name","Amogus")
-freqz(h);
-%t = linspace(-Fs*pi, Fs*pi, 160000);
-%H = abs(fftshift(fft(h,160000)));
-%plot(t,20*log(H))
-%xlim([0 0.002])
-
-
 %% Synthétiser les notes nécessaires à la mélodie que l'on veut jouer
 % Fréquence de chaque note (en Hz)
 freq.DO   = 261.6;
@@ -118,12 +111,16 @@ fact.SI   = freq.SI   / freq.LAd;
 freqLad = 466.2;
 t = (0:length(y_filtered)-1) / Fs;
 
+%Somme sinus
 sum_sinuses = zeros(1, length(t));
 for i = 1:length(index_harmo)
     sum_sinuses = sum_sinuses + Fmag(index_harmo(i)) * cos(2*pi*harmoniques(i)*t+Fphase(index_harmo(i)));
 end
 
+%Enveloppe Temporelle
 synthLA = sum_sinuses' .* y_filtered;
+
+%Normalisation
 synthLA = synthLA / max(abs(synthLA));
 audiowrite("note_guitar_generated.wav", synthLA, Fs);
 
@@ -135,6 +132,7 @@ subplot(2, 1, 2);
 plot(synthLA);
 title('Synthétisé');
 
+%LA# normal puis LA# généré
 sound(y, Fs);
 T = timer('TimerFcn',@(~,~)disp(''),'StartDelay',duree_son*1.5);
 start(T);
@@ -210,8 +208,8 @@ plot(n,20*log(Ysynth));
 title("Fréquences du signal guitare synthétisé");
 xlabel("fréquence (Hz)");
 ylabel("Amplitude (dB)");
-%% Jouer mélodie complète
 
+%% Jouer mélodie complète
 T = timer('TimerFcn',@(~,~)disp(''),'StartDelay',0.25);
 T2 = timer('TimerFcn',@(~,~)disp(''),'StartDelay',2);
 start(T);
