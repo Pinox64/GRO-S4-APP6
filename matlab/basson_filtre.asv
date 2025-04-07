@@ -29,7 +29,7 @@ end
 % Then define an anonymous "vectorized" function using arrayfun:
 h = @(n) arrayfun(@(x) h_bande(x, K, N,w0), n);
 
-Nfft = length(x)*20;
+Nfft = length(x);
 n_ = -N/2 : N/2-1; 
 h_ = hamming(N)'.*h(n_);   % Reponse impulsionnelle du filtre coupe bande avec effet de gibs supprimé (fenétrage)
 hb_ = h_bas2(n_); 
@@ -113,7 +113,7 @@ h_mogus = hamming(N)'.*h_;
 filteredsinSound = conv(conv(x,h_mogus, "same"),h_mogus,"same"); % On applique le filtre 2 fois ;)
 audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_NoSin.wav",filteredsinSound,fe)
 
-% Graph entrée vs sortie 1000 Hz
+% Graph entrée vs sortie
 fftIn = abs(fftshift(fft(x,Nfft)));
 fftOut = abs(fftshift(fft(filteredsinSound,Nfft)));
 figure("Name","Entrée vs Sortie filtre 1000 Hz")
@@ -145,7 +145,7 @@ Rs = 40; % Atténuation minimale à la fréquence de stop (en db)
 
 [N, Wn] = buttord(Wp,Ws,Rp,Rs)
 [b,a] = butter(N,Wn,"low");
- fullyFiltered = filtfilt(b,a,filteredsinSound);
+ fullyFiltered = filter(b,a,filteredsinSound);
  audiowrite("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs_hf_couper.wav",fullyFiltered,fe);
  %figure (1);
  %t = 1:length(x);
@@ -160,22 +160,26 @@ Rs = 40; % Atténuation minimale à la fréquence de stop (en db)
  title("Pôles et zéros du filtre RII (butterworth)");
  figure("Name","Filtre butter")
  freqz(b,a)
+y = fullyFiltered;
+w_hamm = hamming(length(y));
+y_f = y .* w_hamm;      %Appliquer un fenétrage hamming sur le signal d'entrée
+Y = fftshift(fft(y_f));
 
 
-% Graph entrée vs sortie butter
-hammingSurFiltered = fullyFiltered.*hamming(length(fullyFiltered));
-fftOutButter = abs(fftshift(fft(fullyFiltered,Nfft)));
+% Graph entrée vs sortie
+fftIn = abs(fftshift(fft(x,Nfft)));
+fftOut = abs(fftshift(fft(filteredsinSound,Nfft)));
 figure("Name","Entrée vs Sortie filtre Butterworth")
 clf
-subplot(2,1,2);
-plot(f_, 20*log(fftOutButter));
-title("Spectres du signal filtré par le butterworth");
+subplot(2,1,1);
+plot(f_, 20*log(fftIn));
+title("Spectres du signal d'entrée");
 %xlim([-2000 2000])
 xlabel("Fréquence (Hz)");
 ylabel("Magnitude (dB)");
-subplot(2,1,1);
+subplot(2,1,2);
 plot(f_,20*log(fftOut));
-title("Spectres du signal d'entrée");
+title("Spectres du signal filtré par le coupe bande");
 %xlim([-2000 2000])
 xlabel("Fréquence (Hz)");
 ylabel("Magnitude (dB)");

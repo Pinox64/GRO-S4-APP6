@@ -12,17 +12,28 @@ end
 synthLA = sum_sinuses' .* y_enveloppe;
 synthLA = synthLA / max(abs(synthLA));
 
-sound(synthLA, fe);
+%sound(synthLA, fe);
 audiowrite("basson_generated.wav",synthLA, fe);
 
 % Affichage de la comparaison des deux signaux (original vs généré)
 figure(29);
 clf
 fftSynth = abs(fftshift(fft(synthLA,N)));
-subplot(2,1,1);
+subplot(3,1,3);
 plot(n,20*log(fftSynth))
-title("Généré");
-subplot(2,1,2);
-fftOriginal = abs(fftshift(fft(y)));
+title("Fréquences du signal basson synthétisé");
+xlabel("fréquence (Hz)");
+ylabel("Amplitude (dB)");
+subplot(3,1,2);
+fftFiltr = abs(fftshift(fft(y, N)));
+plot(n,20*log(fftFiltr));
+title("Fréquences du signal basson filtré");
+xlabel("fréquence (Hz)");
+ylabel("Amplitude (dB)");
+subplot(3,1,1)
+[x,fe] = audioread("note_basson_plus_sinus_1000_Hz_plus_hautes_freqs.wav");
+fftOriginal = abs(fftshift(fft(x,N)));
 plot(n,20*log(fftOriginal));
-title("original");
+title("Fréquences du signal basson original");
+xlabel("fréquence (Hz)");
+ylabel("Amplitude (dB)");

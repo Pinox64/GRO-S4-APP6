@@ -32,7 +32,7 @@ hold on;
 scatter(n(index_harmo), 20*log(Fmag(index_harmo)), 'ro', 'filled'); 
 xlabel('Fréquence Hz');
 ylabel('Magnitude (dB)');
-title('Détection des harmoniques');
+title('Détection des harmoniques du Basson');
 grid on;
 legend('FFT', 'Harmoniques détectées');
 hold off;
@@ -40,42 +40,30 @@ figure(2);
 plot(n ,Fphase);
 xlabel('Fréquence Hz');
 ylabel('Phase');
-
+myHarmo = [n(index_harmo)', Fmag(index_harmo), Fphase(index_harmo)];
 %% Passe-bas RIF (génération de l'enveloppe)
-
 %Ordre du filtre
-Fc = pi/1000;           % Fréquence de coupure
-N_lp = 1000;               % Ordre du filtre
-m = N_lp*Fc/fe;
-K = 2*m+1;
+Fc = (pi/1000)/(2*pi);           % Fréquence de coupure
+N = 850;               % Ordre du filtre
 
 % Génération de la réponse impulsionnelle
-k = -N_lp/2:N_lp/2-1; % Indices centrés autour de 0
-h = zeros(size(k)); % Initialisation du filtre
+h = ones(1, N) / N; % Coefficients égaux
 
-% Calcul des coefficients de la réponse impulsionnelle
-for i = 1:length(k)
-    if k(i) == 0
-        h(i) = K / N_lp;
-    else
-        h(i) = (1/N_lp) * (sin(pi * k(i) * K / N_lp) / sin(pi * k(i) / N_lp));
-    end
-end
-
-h = hamming(N_lp)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
+%h = hamming(N)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
 y_abs = abs(y);         % On met le signal d'entrée en valeur absolue car l'envloppe temporelle est tjrs au dessus de zéro
 
 y_enveloppe = conv(y_abs, h, 'same');    % On applique le filtre passe bas au signal d'entrée
 
 % Affichage du résultat de l'enveloppe temp
-figure(23);
-clf
+figure(2);
 plot(y_abs, 'b'); hold on;
 plot(y_enveloppe, 'r'); hold off;
 xlabel('Échantillon');
 ylabel('Magnitude');
 legend('Avant filtrage', 'Après filtrage');
-title('Signal et enveloppe temporelle');
+title('Signal et enveloppe temporelle de la guitare');
 grid on;
+figure("name","reponse rif enveloppe")
+freqz(h);
 
 save("data_basson.mat", "Fmag","Fphase","harmoniques", "index_harmo","y","y_enveloppe","fe","N","n")

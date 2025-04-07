@@ -22,7 +22,7 @@ Y = fftshift(fft(y_f));
 Fmag = abs(Y);
 Fphase = angle(Y);
 
-n = linspace(-Fs/2, Fs/2, N);
+n = linspace(-Fs/2, Fs/2-1, N);
 
 %% Trouver les harmoniques et leur magnitude
 f0 = 466;                                               % Fréquence fondamentale du son d'origine (La#)
@@ -47,22 +47,22 @@ hold on;
 scatter(n(index_harmo), 20*log10(Fmag(index_harmo)), 'ro', 'filled'); 
 xlabel('Fréquence Hz');
 ylabel('Magnitude (dB)');
-title('Détection des harmoniques');
+title('Détection des harmoniques de la Guitare');
 grid on;
 legend('FFT', 'Harmoniques détectées');
 hold off;
-
+myHarmo = [n(index_harmo)', Fmag(index_harmo), Fphase(index_harmo)];
 
 %% Passe-bas RIF (génération de l'enveloppe)
 
 %Ordre du filtre
 Fc = (pi/1000)/(2*pi);           % Fréquence de coupure
-N = 610;               % Ordre du filtre
+N = 850;               % Ordre du filtre
 
 % Génération de la réponse impulsionnelle
 h = ones(1, N) / N; % Coefficients égaux
 
-h = hamming(N)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
+%h = hamming(N)'.*h;     % On applique un filtre hamming afin d'éviter l'effet de fuite
 y_abs = abs(y);         % On met le signal d'entrée en valeur absolue car l'envloppe temporelle est tjrs au dessus de zéro
 
 y_filtered = conv(y_abs, h, 'same');    % On applique le filtre passe bas au signal d'entrée
@@ -74,8 +74,16 @@ plot(y_filtered, 'r'); hold off;
 xlabel('Échantillon');
 ylabel('Magnitude');
 legend('Avant filtrage', 'Après filtrage');
-title('Signal et enveloppe temporelle');
+title('Signal et enveloppe temporelle de la guitare');
 grid on;
+
+figure("Name","Amogus")
+freqz(h);
+%t = linspace(-Fs*pi, Fs*pi, 160000);
+%H = abs(fftshift(fft(h,160000)));
+%plot(t,20*log(H))
+%xlim([0 0.002])
+
 
 %% Synthétiser les notes nécessaires à la mélodie que l'on veut jouer
 % Fréquence de chaque note (en Hz)
@@ -184,6 +192,24 @@ end
 synthRE = sum_sinuses' .* y_filtered;
 synthRE = synthRE / max(abs(synthRE));
 
+%% Graphique de comparaison des fft du singnal généré vs synthé
+N = 160000;
+Y = abs(fftshift(fft(y, N)))';
+Ysynth = abs(fftshift(fft(synthLA,N)))';
+
+% Affichage de la comparaison des deux signaux (original vs généré)
+figure("Name","ComparaisonDesSignaux");
+clf
+subplot(2,1,1);
+plot(n,20*log(Y))
+title("Fréquences du signal guitare original");
+xlabel("fréquence (Hz)");
+ylabel("Amplitude (dB)");
+subplot(2,1,2)
+plot(n,20*log(Ysynth));
+title("Fréquences du signal guitare synthétisé");
+xlabel("fréquence (Hz)");
+ylabel("Amplitude (dB)");
 %% Jouer mélodie complète
 
 T = timer('TimerFcn',@(~,~)disp(''),'StartDelay',0.25);
